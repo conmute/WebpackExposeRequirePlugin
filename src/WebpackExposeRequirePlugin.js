@@ -39,22 +39,31 @@ function codeTemplate(bundleName, webpackRequireList) {
     ];
 }
 
-function WebpackExposeRequirePlugin() {}
-
-WebpackExposeRequirePlugin.prototype.apply = function(compiler) {
-    compiler.plugin("compilation", function(compilation) {
-        compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
-            let result = source;
-            if (isEcmaScript(chunk)) {
-                let bundleName = chunkName(chunk);
-                result = this.asString([
-                    source,
-                    ...codeTemplate(bundleName, webpackModuleMap(compilation))
-                ]);
-            }
-            return result;
-        });
+function compilationHook(compilation) {
+    let __this = this;
+    compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
+        return localVarHook(source, chunk, this, compilation);
     });
-};
+}
+
+function localVarHook(source, chunk, context, compilation) {
+    let result = source;
+    if (isEcmaScript(chunk)) {
+        let bundleName = chunkName(chunk);
+        result = context.asString([
+            source,
+            ...codeTemplate(bundleName, webpackModuleMap(compilation))
+        ]);
+    }
+    return result;
+}
+
+class WebpackExposeRequirePlugin {
+
+    apply(compiler) {
+        compiler.plugin("compilation", compilationHook);
+    };
+
+}
 
 export default WebpackExposeRequirePlugin;

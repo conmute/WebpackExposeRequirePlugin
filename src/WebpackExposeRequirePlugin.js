@@ -1,36 +1,58 @@
 import path from "path";
 
+function convertToQuery(request) {
+    return path.relative(process.cwd(), request)
+               .replace(/.[j|t]sx?$/g, "")
+               .replace("src/ts", ".");
+}
+
+function webpackModuleMap(compilation) {
+    return compilation.modules.reduce((result, item, index) => {
+        result[convertToQuery(item.userRequest)] = index;
+        return result;
+    }, {});
+}
+
+function chunkName(chunk) {
+    return chunk.entrypoints[0].name;
+}
+
+function wRequrie(modulePath) {
+    return __webpack_require__(REQUIRE_LIST[modulePath]);
+};
+
+function isEcmaScript(chunk) {
+    return !!chunk.entryModule.resource.match(/\.[j|t]sx?$/g);
+}
+
+function codeTemplate(bundleName, webpackRequireList) {
+    return [
+        "",
+        `// Expose require for testing purpose!!!`,
+        `let REQUIRE_LIST = ` + JSON.stringify(webpackRequireList),
+        wRequrie,
+        `if (true) {`,
+        `    window.require = Object.assign(window.require || {}, {`,
+        `        ${bundleName}: wRequrie`,
+        `    });`,
+        `}`,
+    ];
+}
+
 function WebpackExposeRequirePlugin() {}
 
 WebpackExposeRequirePlugin.prototype.apply = function(compiler) {
-    compiler.plugin("emit", function(compilation, callback) {
-        let filelist = {};
-        compilation.modules.forEach((item, index) => {
-            let query = path
-                .relative(process.cwd(), item.userRequest)
-                .replace(/.[j|t]sx?$/g, "")
-                .replace("src/ts", ".");
-            filelist[query] = index;
-        });
-        compilation.assets['js/require-ids.js'] = {
-            source: function() {
-                return "window.REQUIRE_LIST = " + JSON.stringify(filelist);
-            },
-            size: function() {
-                return filelist.length;
-            }
-        };
-        callback();
-    });
     compiler.plugin("compilation", function(compilation) {
-        compilation.plugin("html-webpack-plugin-before-html-generation", function(
-            htmlPluginData, callback
-        ) {
-            htmlPluginData.assets.js = [
-                "../js/require-ids.js",
-                ...htmlPluginData.assets.js
-            ];
-            callback(null, htmlPluginData);
+        compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
+            let result = source;
+            if (isEcmaScript(chunk)) {
+                let bundleName = chunkName(chunk);
+                result = this.asString([
+                    source,
+                    ...codeTemplate(bundleName, webpackModuleMap(compilation))
+                ]);
+            }
+            return result;
         });
     });
 };

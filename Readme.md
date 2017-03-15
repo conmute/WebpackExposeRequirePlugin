@@ -7,6 +7,5 @@ but if needed we can access any module functionality.
 
 ToDo:
 
-* inject somehow this code into `bundle.[chunkhash].js` by using plugin resources.
-* load require-ids.js into bundle also with the require options.
+* setup module better, and setup dist file for `npm` package manager.
 * write tests.

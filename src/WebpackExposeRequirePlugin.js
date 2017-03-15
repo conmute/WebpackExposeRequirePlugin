@@ -17,6 +17,12 @@ function chunkName(chunk) {
     return chunk.entrypoints[0].name;
 }
 
+function expose(bundleName) {
+    let obj = {};
+    obj[bundleName] = wRequrie;
+    window.require = Object.assign(window.require || {}, obj);
+}
+
 function wRequrie(modulePath) {
     return __webpack_require__(REQUIRE_LIST[modulePath]);
 };
@@ -31,16 +37,12 @@ function codeTemplate(bundleName, webpackRequireList) {
         `// Expose require for testing purpose!!!`,
         `let REQUIRE_LIST = ` + JSON.stringify(webpackRequireList),
         wRequrie,
-        `if (true) {`,
-        `    window.require = Object.assign(window.require || {}, {`,
-        `        ${bundleName}: wRequrie`,
-        `    });`,
-        `}`,
+        expose,
+        `expose("${bundleName}")`,
     ];
 }
 
 function compilationHook(compilation) {
-    let __this = this;
     compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
         return localVarHook(source, chunk, this, compilation);
     });

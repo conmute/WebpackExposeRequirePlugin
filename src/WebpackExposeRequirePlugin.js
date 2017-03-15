@@ -1,45 +1,11 @@
 import path from "path";
 
-function convertToQuery(request) {
-    return path.relative(process.cwd(), request)
-               .replace(/.[j|t]sx?$/g, "")
-               .replace("src/ts", ".");
-}
+export default class WebpackExposeRequirePlugin {
 
-function webpackModuleMap(compilation) {
-    return compilation.modules.reduce((result, item, index) => {
-        result[convertToQuery(item.userRequest)] = index;
-        return result;
-    }, {});
-}
+    apply(compiler) {
+        compiler.plugin("compilation", compilationHook);
+    };
 
-function chunkName(chunk) {
-    return chunk.entrypoints[0].name;
-}
-
-function expose(bundleName) {
-    let obj = {};
-    obj[bundleName] = wRequrie;
-    window.require = Object.assign(window.require || {}, obj);
-}
-
-function wRequrie(modulePath) {
-    return __webpack_require__(REQUIRE_LIST[modulePath]);
-};
-
-function isEcmaScript(chunk) {
-    return !!chunk.entryModule.resource.match(/\.[j|t]sx?$/g);
-}
-
-function codeTemplate(bundleName, webpackRequireList) {
-    return [
-        "",
-        `// Expose require for testing purpose!!!`,
-        `let REQUIRE_LIST = ` + JSON.stringify(webpackRequireList),
-        wRequrie,
-        expose,
-        `expose("${bundleName}")`,
-    ];
 }
 
 function compilationHook(compilation) {
@@ -60,12 +26,44 @@ function localVarHook(source, chunk, context, compilation) {
     return result;
 }
 
-class WebpackExposeRequirePlugin {
-
-    apply(compiler) {
-        compiler.plugin("compilation", compilationHook);
-    };
-
+function isEcmaScript(chunk) {
+    return !!chunk.entryModule.resource.match(/\.[j|t]sx?$/g);
 }
 
-export default WebpackExposeRequirePlugin;
+function chunkName(chunk) {
+    return chunk.entrypoints[0].name;
+}
+
+function codeTemplate(bundleName, webpackRequireList) {
+    return [
+        "",
+        `// Expose require for testing purpose!!!`,
+        `let REQUIRE_LIST = ` + JSON.stringify(webpackRequireList),
+        wRequrie,
+        expose,
+        `expose("${bundleName}")`,
+    ];
+}
+
+function webpackModuleMap(compilation) {
+    return compilation.modules.reduce((result, item, index) => {
+        result[convertToQuery(item.userRequest)] = index;
+        return result;
+    }, {});
+}
+
+function convertToQuery(request) {
+    return path.relative(process.cwd(), request)
+               .replace(/.[j|t]sx?$/g, "")
+               .replace("src/ts", ".");
+}
+
+function expose(bundleName) {
+    let obj = {};
+    obj[bundleName] = wRequrie;
+    window.require = Object.assign(window.require || {}, obj);
+}
+
+function wRequrie(modulePath) {
+    return __webpack_require__(REQUIRE_LIST[modulePath]);
+};

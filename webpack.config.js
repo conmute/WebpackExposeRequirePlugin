@@ -5,7 +5,7 @@ module.exports = {
     output: {
         filename: "dist/[name].js",
         library: "WebpackExposeRequirePlugin",
-        libraryTarget: "commonjs2",
+        libraryTarget: "commonjs",
     },
     target: 'node',
     node: {

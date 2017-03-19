@@ -1,4 +1,4 @@
-module.exports =
+exports["WebpackExposeRequirePlugin"] =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -76,29 +76,71 @@ module.exports =
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_path___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_path__);
 
 
+function levelProcessorFactory(pathPrefix) {
+    return {
+        "application": {
+            check: (x) => !isNodeModule(x.userRequest),
+            formatQuery: (x) => removeExtension(
+                __WEBPACK_IMPORTED_MODULE_0_path___default.a.relative(process.cwd(), x.userRequest)
+            ).replace(pathPrefix, "."),
+        },
+        "dependencies": {
+            check: (x) => isNodeModule(x.userRequest) && isRootModule(x.rawRequest),
+            formatQuery: (x) => x.rawRequest,
+        },
+        "all": {
+            check: (x) => true,
+            formatQuery: (x) => removeExtension(
+                __WEBPACK_IMPORTED_MODULE_0_path___default.a.relative(process.cwd(), x.userRequest)
+            ).replace("node_modules/", ""),
+        },
+    };
+}
+
+let priorities = {
+    "all": 3,
+    "dependencies": 2,
+    "application": 1,
+};
+
 class WebpackExposeRequirePlugin {
 
+    constructor({ level = "application", pathPrefix = "" }) {
+        if (["application", "dependencies", "all"].indexOf(level) !== -1) {
+            this.level = level;
+        }
+        this.pathPrefix = pathPrefix;
+    }
+
     apply(compiler) {
-        compiler.plugin("compilation", compilationHook);
+        compiler.plugin("compilation", compilationHook({
+            level: this.level, 
+            pathPrefix: this.pathPrefix,
+        }));
     };
 
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = WebpackExposeRequirePlugin;
 
 
-function compilationHook(compilation) {
-    compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
-        return localVarHook(source, chunk, this, compilation);
-    });
+function compilationHook({ level, pathPrefix }) {
+    return function(compilation) {
+        compilation.mainTemplate.plugin("local-vars", function(source, chunk) {
+            return localVarHook({ source, chunk, context: this, compilation, level, pathPrefix });
+        });
+    }
 }
 
-function localVarHook(source, chunk, context, compilation) {
+function localVarHook({ source, chunk, context, compilation, level, pathPrefix }) {
     let result = source;
     if (isEcmaScript(chunk)) {
         let bundleName = chunkName(chunk);
         result = context.asString([
             source,
-            ...codeTemplate(bundleName, webpackModuleMap(compilation))
+            ...codeTemplate({
+                bundleName, 
+                map: webpackModuleMap(compilation, level, pathPrefix),
+            }),
         ]);
     }
     return result;
@@ -112,33 +154,53 @@ function chunkName(chunk) {
     return chunk.entrypoints[0].name;
 }
 
-function codeTemplate(bundleName, webpackRequireList) {
+function codeTemplate({ bundleName, map }) {
     return [
         "",
         `// Expose require for testing purpose!!!`,
-        `let REQUIRE_LIST = ` + JSON.stringify(webpackRequireList),
+        `let REQUIRE_LIST = ` + JSON.stringify(map),
         wRequrie,
         expose,
         `expose("${bundleName}")`,
     ];
 }
 
-function webpackModuleMap(compilation) {
+function webpackModuleMap(compilation, level, pathPrefix) {
+    let levelProcessor = levelProcessorFactory(pathPrefix);
     return compilation.modules.reduce((result, item, index) => {
-        result[convertToQuery(item.userRequest)] = index;
+        assignLevel({ result, item, level, index, levelProcessor });
         return result;
     }, {});
 }
 
-function convertToQuery(request) {
-    return __WEBPACK_IMPORTED_MODULE_0_path___default.a.relative(process.cwd(), request)
-               .replace(/.[j|t]sx?$/g, "")
-               .replace("src/ts", ".");
+function assignLevel({result, item, level, index, levelProcessor }) {
+    Object.keys(levelProcessor).some((processorName) => {
+        let processor = levelProcessor[processorName];
+        let processed = false;
+        if (processor.check(item) && priorities[level] >= priorities[processorName]) {
+            result[processor.formatQuery(item)] = index;
+            processed = true;
+        }
+        return processed;
+    });
+}
+
+function removeExtension(path) {
+    return path.replace(/.[j|t]sx?$/g, "");
+}
+
+function isNodeModule(path) {
+    return path.indexOf("node_modules") !== -1;
+}
+
+function isRootModule(rawRequest) {
+    return rawRequest.indexOf("/") === -1;
 }
 
 function expose(bundleName) {
     let obj = {};
     obj[bundleName] = wRequrie;
+    obj[bundleName].map = REQUIRE_LIST;
     window.require = Object.assign(window.require || {}, obj);
 }
 

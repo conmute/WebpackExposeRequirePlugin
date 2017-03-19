@@ -1,30 +1,43 @@
 WebPack expose `require` outside of bundle
 ==========================================
 
-This is usefull for testing any module by using selenium and keeping tests and source code aside.
-In other words there is no global variables (expect exposed require function), 
-but if needed we can access any module functionality.
+This plugin may be usefull for high fidelity testing with selenium.
+Module by using selenium and keeping test code and source code aside.
 
-Wepack setup instuction:
+Bundle will define parameter to window object, this will be the only global variable.
+
+Wepack setup instuction example:
 
 ```javascript
-// original code is in ES6, its bundles to vanilla js with webpack libraryTarget.
+/**
+ * Original code is in ES6, its bundles to vanilla js with webpack libraryTarget.
+ */
 let ExposeRequirePlugin = require("webpack-expose-require-plugin").default;
 
+/**
+ * 
+ */
 module.exports = {
     // ...
     plugins: [
-        new ExposeRequirePlugin(),
+        new ExposeRequirePlugin({
+            level: "dependency", // "all", "dependency", "application"
+            pathPrefix: "example/simple/src", // in case if your source is not placed in root folder.
+        }),
     ],
     // ...
 }
 ```
 
-As result you can in browser after bundle script injection use such code
+As result you can use this code in browser:
 
 ```html
 <script type="text/javascript">
-    require.main("src/main").bootstrap();
+    /**
+     * In shown above example if we dont set `pathPrefix` options
+     * the argument string would be "./example/simple/src/index".
+     */
+    require.main("./index").bootstrap();
 </script>
 ```
 
@@ -33,9 +46,8 @@ The `require` will be assigned as property to window. Each available bundle will
 In example described above, there is bundle with name `main` - see entry names, defauls is `main` name -, 
 we are getting our main script that will bootstrap react application in given page.
 
-ToDO:
+To do:
+------
 
-* Add option to allow require outside only application/libraries/library-depenendency level.
-* Add option to expose all posible require strings.
 * Develop moment for production use when one webpack bundle can require module from another bundle, but without exposing to 
 * Write tests.

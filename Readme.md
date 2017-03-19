@@ -7,5 +7,6 @@ but if needed we can access any module functionality.
 
 ToDo:
 
-* setup module better, and setup dist file for `npm` package manager.
-* write tests.
+* Prepare example
+* Setup module better, and setup dist file for `npm` package manager.
+* Write tests.

@@ -1,4 +1,4 @@
-let ExposeRequirePlugin = require("webpack-expose-require-plugin");
+let ExposeRequirePlugin = require("webpack-expose-require-plugin").default;
 
 module.exports = {
     entry: "./src/main.jsx",

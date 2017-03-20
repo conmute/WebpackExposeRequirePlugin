@@ -37,6 +37,11 @@ As result you can use this code in browser:
      * Dependencies will be without "./" path prefix. For example: "react" npm dependency vs "./index" source file.
      */
     require.main("./index").bootstrap();
+
+    /**
+     * List all possible modules.
+     */
+    console.log(require.main.map);
 </script>
 ```
 

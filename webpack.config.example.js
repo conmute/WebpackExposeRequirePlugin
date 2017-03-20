@@ -1,4 +1,6 @@
-let ExposeRequirePlugin = require("./dist/main").WebpackExposeRequirePlugin.default;
+let ExposeRequirePlugin = require("./dist/index");
+
+console.log(ExposeRequirePlugin);
 
 module.exports = {
     entry: "./example/simple/src/index.jsx",
@@ -21,6 +23,6 @@ module.exports = {
         ],
     },
     plugins: [
-        new ExposeRequirePlugin({ level: "all", pathPrefix: "example/simple/src" }),
+        new ExposeRequirePlugin({ level: "dependency", pathPrefix: "example/simple/src" }),
     ],
 };

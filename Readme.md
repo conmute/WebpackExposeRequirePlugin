@@ -9,10 +9,7 @@ Bundle will define parameter to window object, this will be the only global vari
 Wepack setup instuction example:
 
 ```javascript
-/**
- * Original code is in ES6, its bundles to vanilla js with webpack libraryTarget.
- */
-let ExposeRequirePlugin = require("webpack-expose-require-plugin").default;
+let ExposeRequirePlugin = require("webpack-expose-require-plugin");
 
 /**
  * 
@@ -36,6 +33,8 @@ As result you can use this code in browser:
     /**
      * In shown above example if we dont set `pathPrefix` options
      * the argument string would be "./example/simple/src/index".
+     *
+     * Dependencies will be without "./" path prefix. For example: "react" npm dependency vs "./index" source file.
      */
     require.main("./index").bootstrap();
 </script>

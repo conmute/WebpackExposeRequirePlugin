@@ -1,6 +1,6 @@
 {
   "name": "webpack-expose-require-plugin",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Makes localy scoped require to be assigned to window browser object, thus available functionality with selenium.",
   "main": "dist/index.js",
   "repository": "https://github.com/conmute/WebpackExposeRequirePlugin.git",
